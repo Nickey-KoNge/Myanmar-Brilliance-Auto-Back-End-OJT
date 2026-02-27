@@ -6,12 +6,9 @@ import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { dataSourceOptions } from './database/typeorm.config';
 import { ConfigModule } from '@nestjs/config';
-import { CommonModule } from './common/common.module';
+// import { CommonModule } from './common/common.module';
 
-import { MasterCompanyCompanyModule } from './modules/master-company/company/master-company.company.module';
-import { MasterServiceRoleModule } from './modules/master-service/role/master-service.role.module';
-import { MasterCompanyBranchesModule } from './modules/master-company/branches/master-company.branches.module';
-import { MasterCompanyCredentialsModule } from './modules/master-company/credentials/master-company.credentials.module';
+// import { MasterCompanyCompanyModule } from './modules/master-company/company/master-company.company.module';
 
 @Module({
   imports: [
@@ -20,11 +17,8 @@ import { MasterCompanyCredentialsModule } from './modules/master-company/credent
       ...dataSourceOptions,
       autoLoadEntities: true,
     }),
-    MasterCompanyCompanyModule,
-    MasterServiceRoleModule,
-    MasterCompanyBranchesModule,
-    MasterCompanyCredentialsModule,
-    CommonModule,
+    // MasterCompanyCompanyModule,
+
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'public'),
     }),
