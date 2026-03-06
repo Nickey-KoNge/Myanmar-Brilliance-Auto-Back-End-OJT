@@ -9,6 +9,9 @@ import { ConfigModule } from '@nestjs/config';
 // import { CommonModule } from './common/common.module';
 
 // import { MasterCompanyCompanyModule } from './modules/master-company/company/master-company.company.module';
+import { CompanyModule } from './modules/master-company/company/company.module';
+import { CredentialModule } from './modules/master-company/credential/credential.module';
+import { StaffModule } from './modules/master-company/staff/staff.module';
 
 @Module({
   imports: [
@@ -22,6 +25,9 @@ import { ConfigModule } from '@nestjs/config';
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'public'),
     }),
+    CompanyModule,
+    StaffModule,
+    CredentialModule,
   ],
 })
 export class AppModule {}
