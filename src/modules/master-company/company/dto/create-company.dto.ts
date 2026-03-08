@@ -8,6 +8,6 @@ export class CreateCompanyDto {
   streetAddress: string;
   websiteUrl?: string;
   establishYear: string; // Will be converted to Date
-  regExpDate: string;    // Will be converted to Date
+  regExpDate: string; // Will be converted to Date
   status?: string;
 }

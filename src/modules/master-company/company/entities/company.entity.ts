@@ -1,6 +1,5 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
@@ -11,9 +10,9 @@ import {
 
 @Entity({ name: 'company', schema: 'master_company' })
 export class Company {
-  @PrimaryColumn({ 
-    type: 'uuid', 
-    default: () => 'uuid_generate_v7()' 
+  @PrimaryColumn({
+    type: 'uuid',
+    default: () => 'uuid_generate_v7()',
   })
   id: string;
 
