@@ -2,39 +2,39 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateBranchesDto {
-    
-    @IsNotEmpty()
-    @IsString()
-    branches_name:string;
-    @IsNotEmpty()
-    @IsString()                 
-    gps_location:string;
+  @IsNotEmpty()
+  @IsString()
+  branches_name: string;
 
-    @IsNotEmpty()
-    @IsString()
-    description:string;
+  @IsNotEmpty()
+  @IsString()
+  gps_location: string;
 
-    @IsNotEmpty()
-    @IsString()
-    phone:string;   
+  @IsNotEmpty()
+  @IsString()
+  description: string;
 
-    @IsNotEmpty()    
-    @IsString()
-    status:string;
-    
-    @IsNotEmpty()
-    @IsString()
-    address:string;
+  @IsNotEmpty()
+  @IsString()
+  phone: string;
 
-    @IsNotEmpty()
-    @IsString()
-    city:string;
+  @IsNotEmpty()
+  @IsString()
+  status: string;
 
-    @IsNotEmpty()
-    @IsString()
-    state:string;
+  @IsNotEmpty()
+  @IsString()
+  address: string;
 
-    @IsNotEmpty()
-    @IsString()
-    company_id:string;  
+  @IsNotEmpty()
+  @IsString()
+  city: string;
+
+  @IsNotEmpty()
+  @IsString()
+  state: string;
+
+  @IsNotEmpty()
+  @IsString()
+  company_id: string;
 }

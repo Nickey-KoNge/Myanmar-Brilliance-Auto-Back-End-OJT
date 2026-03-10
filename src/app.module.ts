@@ -6,11 +6,13 @@ import { join } from 'path';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { dataSourceOptions } from './database/typeorm.config';
 import { ConfigModule } from '@nestjs/config';
+import { CommonModule } from './common/common.module';
 
 import { MasterCompanyBranchesModule } from './modules/master-company/branches/master-company.branches.module';
 import { CompanyModule } from './modules/master-company/company/company.module';
 import { CredentialModule } from './modules/master-company/credential/credential.module';
 import { StaffModule } from './modules/master-company/staff/staff.module';
+import { MasterServiceRoleModule } from './modules/master-service/role/master-service.role.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { StaffModule } from './modules/master-company/staff/staff.module';
     CompanyModule,
     StaffModule,
     CredentialModule,
+    CommonModule,
+    MasterServiceRoleModule,
   ],
 })
 export class AppModule {}

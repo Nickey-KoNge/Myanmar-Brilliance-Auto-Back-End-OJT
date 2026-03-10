@@ -1,8 +1,19 @@
-import { Entity, PrimaryColumn, Column, OneToOne, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+//src/modules/master-company/credential/entities/credential.entity.ts
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  OneToOne,
+  OneToMany,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
 import { Staff } from '../../staff/entities/staff.entity';
 import { RefreshToken } from './refresh-token.entity';
 
 @Entity({ name: 'credentials', schema: 'master_company' })
+@Index(['email', 'status'])
 export class Credential {
   @PrimaryColumn({ type: 'uuid', default: () => 'uuid_generate_v7()' })
   id: string;
@@ -14,6 +25,7 @@ export class Credential {
   password: string;
 
   @Column({ default: 'Active', length: 20 })
+  @Index()
   status: string;
 
   @CreateDateColumn({ name: 'created_at' })

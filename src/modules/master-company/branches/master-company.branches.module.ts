@@ -2,15 +2,15 @@
 
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { BranchesEntity } from './entities/branches.entity';
+import { Branches } from './entities/branches.entity';
 import { MasterCompanyBranchesController } from './master-company.branches.controller';
 import { MasterCompanyBranchesService } from './master-company.branches.service';
 import { OpService } from 'src/common/service/op.service';
 import { ImgFileService } from 'src/common/service/imgfile.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([BranchesEntity])],
+  imports: [TypeOrmModule.forFeature([Branches])],
   controllers: [MasterCompanyBranchesController],
-    providers: [MasterCompanyBranchesService,OpService,ImgFileService]   
+  providers: [MasterCompanyBranchesService, OpService, ImgFileService],
 })
 export class MasterCompanyBranchesModule {}
