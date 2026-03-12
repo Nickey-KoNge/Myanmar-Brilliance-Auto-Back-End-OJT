@@ -41,7 +41,7 @@ export class CompanyService {
       where: { id: In(ids) },
     });
   }
-  
+
   async create(
     createCompanyDto: CreateCompanyDto,
     file: Express.Multer.File,

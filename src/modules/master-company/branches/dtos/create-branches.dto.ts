@@ -1,5 +1,5 @@
 //src/modules/master-company/branches/dtos/create-branches.dto.ts
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateBranchesDto {
   @IsNotEmpty()
@@ -18,9 +18,9 @@ export class CreateBranchesDto {
   @IsString()
   phone: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  status: string;
+  status?: string;
 
   @IsNotEmpty()
   @IsString()

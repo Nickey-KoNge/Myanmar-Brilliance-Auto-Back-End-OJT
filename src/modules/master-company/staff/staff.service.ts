@@ -32,38 +32,56 @@ export class StaffService {
     createStaffDto: CreateStaffDto,
     file: Express.Multer.File,
   ): Promise<Staff> {
-    let imageUrl: string | undefined;
-
     const { email, password, company, branch, role, ...staffData } =
       createStaffDto;
 
-    const credential = await this.credentialService.register({
-      email,
-      password,
-    });
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (file) {
-      const optimizedFile = await this.optimizeImageService.optimizeImage(file);
-      imageUrl = await this.fileService.uploadFile(optimizedFile, 'staff');
-    }
-
-    const staff = this.staffRepository.create({
-      ...staffData,
-      image: imageUrl,
-      credential: { id: credential.id },
-      company: { id: company },
-      branch: { id: branch },
-      role: { id: role },
-    });
+    let imageUrl: string | undefined;
 
     try {
-      return await this.opService.create<Staff>(this.staffRepository, {
-        ...staff,
-      });
-    } catch (error) {
-      throw new BadRequestException(
-        `Registration not Success! ${error}, Re-check Staff Registration Information.`,
+      const credential = await this.credentialService.register(
+        {
+          email,
+          password,
+        },
+        queryRunner.manager,
       );
+
+      if (file) {
+        const optimizedFile =
+          await this.optimizeImageService.optimizeImage(file);
+        imageUrl = await this.fileService.uploadFile(optimizedFile, 'staff');
+      }
+
+      const staff = queryRunner.manager.create(Staff, {
+        ...staffData,
+        image: imageUrl,
+        credential: { id: credential.id },
+        company: { id: company },
+        branch: { id: branch },
+        role: { id: role },
+      });
+
+      const savedStaff = await queryRunner.manager.save(staff);
+
+      await queryRunner.commitTransaction();
+      return savedStaff;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+
+      if (imageUrl) {
+        await this.fileService.deleteFile(imageUrl);
+      }
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new BadRequestException(
+        `Registration failed! ${errorMessage}. All changes rolled back.`,
+      );
+    } finally {
+      await queryRunner.release();
     }
   }
 
@@ -74,6 +92,31 @@ export class StaffService {
         credential: true,
         branch: true,
         role: true,
+      },
+      select: {
+        id: true,
+        staffName: true,
+        phone: true,
+        position: true,
+        image: true,
+        status: true,
+        credential: {
+          id: true,
+          email: true,
+        },
+        branch: {
+          id: true,
+          branches_name: true,
+        },
+        company: {
+          id: true,
+          company_name: true,
+          phone: true,
+        },
+        role: {
+          id: true,
+          role_name: true,
+        },
       },
     });
   }
@@ -86,6 +129,31 @@ export class StaffService {
         credential: true,
         branch: true,
         role: true,
+      },
+      select: {
+        id: true,
+        staffName: true,
+        phone: true,
+        position: true,
+        image: true,
+        status: true,
+        credential: {
+          id: true,
+          email: true,
+        },
+        branch: {
+          id: true,
+          branches_name: true,
+        },
+        company: {
+          id: true,
+          company_name: true,
+          phone: true,
+        },
+        role: {
+          id: true,
+          role_name: true,
+        },
       },
     });
 
@@ -158,10 +226,16 @@ export class StaffService {
       await this.fileService.deleteFile(staff.image);
     }
 
-    if (staff.credential) {
-      await this.credentialService.deleteCredential(staff.credential.id);
-    }
+    const credentialId = staff.credential?.id;
 
-    return await this.opService.remove<Staff>(this.staffRepository, id);
+    const deletedStaff = await this.opService.remove<Staff>(
+      this.staffRepository,
+      id,
+    );
+
+    if (credentialId) {
+      await this.credentialService.deleteCredential(credentialId);
+    }
+    return deletedStaff;
   }
 }

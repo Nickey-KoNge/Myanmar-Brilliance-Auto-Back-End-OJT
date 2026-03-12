@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/login.dto';
@@ -20,7 +20,10 @@ export class CredentialsService {
     private jwtService: JwtService,
   ) {}
 
-  async register(dto: RegisterDto): Promise<Credential> {
+  async register(
+    dto: RegisterDto,
+    manager?: EntityManager,
+  ): Promise<Credential> {
     // 1. Hash the password before saving
     // const hashedPassword = await bcrypt.hash(dto.password, 10);
 
@@ -48,7 +51,9 @@ export class CredentialsService {
     //   }
     // });
 
-    const credentialRepo = this.dataSource.getRepository(Credential);
+    const credentialRepo = manager
+      ? manager.getRepository(Credential)
+      : this.dataSource.getRepository(Credential);
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dto.email)) {
       throw new BadRequestException('Invalid email format');
@@ -77,7 +82,7 @@ export class CredentialsService {
       });
 
       return await credentialRepo.save(credential);
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException('Failed to create credential');
     }
   }
