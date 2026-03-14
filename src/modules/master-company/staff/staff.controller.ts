@@ -8,11 +8,18 @@ import {
   Delete,
   UploadedFile,
   UseInterceptors,
+  ClassSerializerInterceptor,
+  Query,
 } from '@nestjs/common';
 import { StaffService } from './staff.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+
+//extra import for serialize
+import { FindStaffSerialize } from './serialize/find-staff.serialize';
+import { plainToInstance } from 'class-transformer';
+import { PaginateStaffDto } from './dto/paginate-staff.dto';
 
 @Controller('master-company/staff')
 export class StaffController {
@@ -26,10 +33,17 @@ export class StaffController {
   ) {
     return this.staffService.create(createStaffDto, file);
   }
-
+  @UseInterceptors(ClassSerializerInterceptor)
   @Get()
-  findAll() {
-    return this.staffService.findAll();
+  async findAll(@Query() query: PaginateStaffDto) {
+    const result = await this.staffService.findAll(query);
+    const serializedData = plainToInstance(FindStaffSerialize, result.data, {
+      excludeExtraneousValues: true,
+    });
+    return {
+      ...result,
+      data: serializedData,
+    };
   }
 
   @Get(':id')

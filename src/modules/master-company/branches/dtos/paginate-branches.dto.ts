@@ -1,8 +1,8 @@
-//src/modules/master-company/company/dtos/paginate-companies.dto.ts
+//src/modules/master-company/branches/dtos/paginate-branches.dto.ts
 import { Type } from 'class-transformer';
 import { IsOptional, IsInt, Min, IsString } from 'class-validator';
 
-export class PaginateCompaniesDto {
+export class PaginateBranchesDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -21,6 +21,10 @@ export class PaginateCompaniesDto {
   @IsOptional()
   @IsString()
   lastId?: string;
+
+  @IsOptional()
+  @IsString()
+  company_id?: string;
 
   @IsOptional()
   @IsString()
