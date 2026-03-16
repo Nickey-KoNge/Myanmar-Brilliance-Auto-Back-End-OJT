@@ -10,11 +10,13 @@ import {
   UseInterceptors,
   ClassSerializerInterceptor,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { StaffService } from './staff.service';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { AtGuard } from '../../../common/guards/at.guard';
 
 //extra import for serialize
 import { FindStaffSerialize } from './serialize/find-staff.serialize';
@@ -22,6 +24,7 @@ import { plainToInstance } from 'class-transformer';
 import { PaginateStaffDto } from './dto/paginate-staff.dto';
 
 @Controller('master-company/staff')
+@UseGuards(AtGuard)
 export class StaffController {
   constructor(private readonly staffService: StaffService) {}
 
