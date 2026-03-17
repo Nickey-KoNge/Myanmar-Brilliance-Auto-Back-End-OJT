@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { In, Repository, SelectQueryBuilder } from 'typeorm';
 
 import { Company } from './entities/company.entity';
 import { CreateCompanyDto } from './dtos/create-company.dto';
@@ -14,7 +14,7 @@ import { UpdateCompanyDto } from './dtos/update-company.dto';
 import { IFileService } from '../../../common/service/i-file.service';
 import { OpService } from '../../../common/service/op.service';
 import { OptimizeImageService } from '../../../common/service/optimize-image.service';
-
+import { PaginateCompanyDto } from './dtos/paginate-company.dto';
 @Injectable()
 export class CompanyService {
   constructor(
@@ -77,22 +77,121 @@ export class CompanyService {
     }
   }
 
-  findAll() {
-    return this.companyRepo.find();
-  }
+  async findAll(query: PaginateCompanyDto) {
+    const { page, limit, search, lastId, lastCreatedAt, startDate, endDate } =
+      query;
+    const queryBuilder = this.companyRepo.createQueryBuilder('company');
+    if (search) {
+      queryBuilder.andWhere(
+        `(company.company_name ILike :search 
+          OR company.reg_number ILike :search 
+          OR company.phone ILike :search
+          OR company.street_address ILike :search
+          OR company.city ILike :search
+          OR company.country ILike :search
+          OR staff.owner_name ILike :search
+          OR staff.owner_email ILike :search
+          OR staff.owner_phone ILike :search
+          OR staff.establish_year ILike :search
+          OR staff.reg_exp_date ILike :search
+          OR staff.email ILike :search)`,
+        { search: `%${search}%` },
+      );
+    }
 
+    if (startDate || endDate) {
+      if (startDate)
+        queryBuilder.andWhere('company.created_at >= :startDate', {
+          startDate: `${startDate} 00:00:00`,
+        });
+      if (endDate)
+        queryBuilder.andWhere('company.created_at <= :endDate', {
+          endDate: `${endDate} 23:59:59`,
+        });
+    }
+
+    if (lastId && lastCreatedAt && lastId !== 'undefined') {
+      queryBuilder.andWhere(
+        '(company.created_at < :lastCreatedAt OR (company.created_at = :lastCreatedAt AND company.id < :lastId))',
+        { lastCreatedAt, lastId },
+      );
+    } else {
+      const skip = (page - 1) * limit;
+      queryBuilder.skip(skip);
+    }
+
+    const rawData = await queryBuilder
+      .orderBy('company.created_at', 'DESC')
+      .addOrderBy('company.id', 'DESC')
+      .take(limit)
+      .getMany();
+
+    const data = rawData.map((company) => ({
+      id: company.id,
+      company_name: company.company_name,
+      reg_number: company.reg_number,
+      street_address: company.street_address,
+      city: company.city,
+      phone: company.phone,
+      owner_name: company.owner_name,
+      owner_email: company.owner_email,
+      owner_phone: company.owner_phone,
+      website_url: company.website_url,
+      establish_year: company.establish_year,
+      reg_exp_date: company.reg_exp_date,
+      image: company.image,
+      email: company.email,
+      country: company.country,
+    }));
+
+    const hasFilters = !!(search || startDate || endDate);
+    const total = await this.getOptimizedCount(queryBuilder, hasFilters);
+
+    return {
+      data,
+      total,
+      totalPages: Math.ceil(total / limit) || 1,
+      currentPage: page,
+    };
+  }
+  private async getOptimizedCount(
+    queryBuilder: SelectQueryBuilder<Company>,
+    hasFilters: boolean,
+  ): Promise<number> {
+    if (hasFilters) {
+      return await queryBuilder.getCount();
+    }
+
+    try {
+      const result = await this.companyRepo.query<{ estimate: string }[]>(
+        `SELECT reltuples::bigint AS estimate FROM pg_class c 
+           JOIN pg_namespace n ON n.oid = c.relnamespace 
+           WHERE n.nspname = 'master_company' AND c.relname = 'company'`,
+      );
+
+      const estimate = result?.[0]?.estimate ? Number(result[0].estimate) : 0;
+      return estimate < 1000 ? await this.companyRepo.count() : estimate;
+    } catch {
+      return await this.companyRepo.count();
+    }
+  }
   async findOne(id: string): Promise<Company> {
     const company = await this.companyRepo.findOne({
       where: { id },
-      relations: ['branches'],
+      relations: {
+        branches: true,
+      },
       select: {
         id: true,
         company_name: true,
         reg_number: true,
         street_address: true,
         city: true,
+        country: true,
         phone: true,
         owner_name: true,
+        owner_email: true,
+        owner_phone: true,
         website_url: true,
         establish_year: true,
         reg_exp_date: true,
