@@ -24,4 +24,7 @@ export class GetBranchesSerialize {
 
   @Expose()
   address: string;
+
+  @Expose()
+  company_id: string;
 }

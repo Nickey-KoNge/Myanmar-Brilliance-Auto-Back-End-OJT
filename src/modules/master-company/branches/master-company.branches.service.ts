@@ -142,6 +142,7 @@ export class MasterCompanyBranchesService {
         address: true,
         division: true,
         status: true,
+        company_id: true,
       },
     });
 
