@@ -8,8 +8,11 @@ import {
   DeleteDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Company } from '../../company/entities/company.entity';
+import { Staff } from '../../staff/entities/staff.entity';
+import { Stations } from '../../stations/entities/stations.entity';
 @Entity({ schema: 'master_company', name: 'branches' })
 export class Branches {
   @Column({
@@ -47,6 +50,7 @@ export class Branches {
   description: string;
 
   @Column({ type: 'varchar', length: 20, default: 'Active' })
+  @Index()
   status: string;
 
   @CreateDateColumn()
@@ -61,4 +65,10 @@ export class Branches {
   @ManyToOne(() => Company, (company) => company.branches)
   @JoinColumn({ name: 'company_id' })
   company: Company;
+
+  @OneToMany(() => Staff, (staff) => staff.branch)
+  staff: Staff[];
+
+  @OneToMany(() => Stations, (station) => station.branch)
+  stations: Stations[];
 }

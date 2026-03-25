@@ -1,5 +1,4 @@
 // src/modules/master-company/company/entities/company.entity.ts
-
 import {
   Entity,
   Column,
@@ -10,6 +9,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Branches } from '../../branches/entities/branches.entity';
+import { Staff } from '../../staff/entities/staff.entity';
 
 @Entity({ schema: 'master_company', name: 'company' })
 export class Company {
@@ -25,6 +25,7 @@ export class Company {
   company_name: string;
 
   @Column({ type: 'varchar', length: 50, unique: true })
+  @Index()
   reg_number: string;
 
   @Column({ type: 'varchar', length: 20, unique: true })
@@ -43,6 +44,16 @@ export class Company {
   @Column({ type: 'varchar', length: 100 })
   street_address: string;
 
+  @Column({ type: 'varchar', length: 100, default: 'Ko Khin Maung San' })
+  owner_name: string;
+
+  @Column({ type: 'varchar', length: 20, default: '09XXXXXXX' })
+  owner_phone: string;
+
+  @Index()
+  @Column({ type: 'varchar', length: 100, default: 'example@gmail.com' })
+  owner_email: string;
+
   @Column({ type: 'varchar', length: 100, nullable: true })
   website_url: string;
 
@@ -56,6 +67,7 @@ export class Company {
   image: string;
 
   @Column({ type: 'varchar', length: 20, default: 'Active' })
+  @Index()
   status: string;
 
   @CreateDateColumn()
@@ -69,4 +81,7 @@ export class Company {
 
   @OneToMany(() => Branches, (branch) => branch.company)
   branches: Branches[];
+
+  @OneToMany(() => Staff, (staff) => staff.company)
+  staff: Staff[];
 }

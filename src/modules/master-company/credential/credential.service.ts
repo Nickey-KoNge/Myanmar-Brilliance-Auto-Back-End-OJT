@@ -1,0 +1,282 @@
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+  InternalServerErrorException,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
+import { DataSource, EntityManager } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { RegisterDto } from './dtos/register.dto';
+import { LoginDto } from './dtos/login.dto';
+import { Credential } from './entities/credential.entity';
+import { JwtService } from '@nestjs/jwt';
+import { RefreshToken } from './entities/refresh-token.entity';
+
+@Injectable()
+export class CredentialsService {
+  constructor(
+    private dataSource: DataSource,
+    private jwtService: JwtService,
+  ) {}
+
+  async register(
+    dto: RegisterDto,
+    manager?: EntityManager,
+  ): Promise<Credential> {
+    // 1. Hash the password before saving
+    // const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    // 2. Use a transaction to create both records
+    // return await this.dataSource.transaction(async (manager) => {
+    //   try {
+    //     // Create the Login Identity
+    //     const credential = await manager.save(Credential, {
+    //       email: dto.email,
+    //       password: hashedPassword,
+    //     });
+
+    //     // Create the Staff Profile linked to the Credential and Company
+    //     await manager.save(Staff, {
+    //       staffName: dto.staffName,
+    //       phone: dto.phone,
+    //       credential: { id: credential.id },
+    //       company: { id: dto.companyId },
+    //     });
+
+    //     return { message: 'Registration successful' };
+    //   } catch (error) {
+    //     if (error.code === '23505') throw new ConflictException('Email already exists');
+    //     throw error;
+    //   }
+    // });
+
+    const credentialRepo = manager
+      ? manager.getRepository(Credential)
+      : this.dataSource.getRepository(Credential);
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(dto.email)) {
+      throw new BadRequestException('Invalid email format');
+    }
+
+    if (!dto.password || dto.password.length < 6) {
+      throw new BadRequestException(
+        'Password must be at least 6 characters long',
+      );
+    }
+
+    const existing = await credentialRepo.findOne({
+      where: { email: dto.email },
+    });
+
+    if (existing) {
+      throw new BadRequestException('Email already in use');
+    }
+
+    try {
+      const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+      const credential = credentialRepo.create({
+        email: dto.email,
+        password: hashedPassword,
+      });
+
+      return await credentialRepo.save(credential);
+    } catch {
+      throw new InternalServerErrorException('Failed to create credential');
+    }
+  }
+
+  // async updateCredential(
+  //   id: string,
+  //   email?: string,
+  //   password?: string,
+  // ): Promise<Credential> {
+  //   const credentialRepo = this.dataSource.getRepository(Credential);
+
+  //   const credential = await credentialRepo.findOne({ where: { id } });
+  //   if (!credential) {
+  //     throw new NotFoundException('Credential not found');
+  //   }
+
+  //   if (email) {
+  //     if (email !== credential.email) {
+  //       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  //         throw new BadRequestException('Invalid email format');
+  //       }
+
+  //       const existing = await credentialRepo.findOne({ where: { email } });
+  //       if (existing) {
+  //         throw new BadRequestException(
+  //           'Email already in use by another account',
+  //         );
+  //       }
+
+  //       credential.email = email;
+  //     }
+  //   }
+
+  //   if (password) {
+  //     if (password.length < 6) {
+  //       throw new BadRequestException(
+  //         'Password must be at least 6 characters long',
+  //       );
+  //     }
+
+  //     credential.password = await bcrypt.hash(password, 10);
+  //   }
+
+  //   try {
+  //     return await credentialRepo.save(credential);
+  //   } catch (error) {
+  //     console.error('Error updating credential:', error);
+  //     throw new InternalServerErrorException('Failed to update credential');
+  //   }
+  // }
+
+  async updateCredential(
+    id: string,
+    email?: string,
+    password?: string,
+  ): Promise<Credential> {
+    const credentialRepo = this.dataSource.getRepository(Credential);
+
+    const credential = await credentialRepo.findOne({ where: { id } });
+
+    if (!credential) throw new NotFoundException('Credential not found');
+
+    if (email) {
+      if (email !== credential.email) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+          throw new BadRequestException('Invalid email format');
+
+        const existing = await credentialRepo.findOne({ where: { email } });
+
+        if (existing && existing.id !== id) {
+          throw new BadRequestException(
+            'Email already in use by another account',
+          );
+        }
+
+        credential.email = email;
+      }
+    }
+
+    if (password) {
+      if (password.length < 6)
+        throw new BadRequestException(
+          'Password must be at least 6 characters long',
+        );
+      credential.password = await bcrypt.hash(password, 10);
+    }
+
+    return await credentialRepo.save(credential);
+  }
+
+  async deleteCredential(id: string): Promise<void> {
+    const credentialRepo = this.dataSource.getRepository(Credential);
+
+    const result = await credentialRepo.delete(id);
+
+    if (result.affected === 0) {
+      throw new NotFoundException('Credential not found');
+    }
+  }
+
+  async login(dto: LoginDto) {
+    console.log(dto.email);
+    const user = await this.dataSource.getRepository(Credential).findOne({
+      where: { email: dto.email },
+      relations: ['staff', 'staff.company'],
+      select: ['id', 'email', 'password', 'status'],
+    });
+
+    if (!user || !(await bcrypt.compare(dto.password, user.password))) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    // 1. Generate Access and Refresh Tokens
+    const tokens = await this.getTokens(
+      user.id,
+      user.email,
+      user.staff.company.id,
+    );
+
+    // 2. Save the Refresh Token to the database
+    await this.updateRefreshToken(user.id, tokens.refresh_token);
+
+    return {
+      message: 'Login successful',
+      ...tokens,
+    };
+  }
+
+  async getTokens(userId: string, email: string, companyId: string) {
+    const [at, rt] = await Promise.all([
+      this.jwtService.signAsync(
+        { sub: userId, email, companyId },
+        { secret: 'AT_SECRET', expiresIn: '4h' }, // Use env variables in production
+      ),
+      this.jwtService.signAsync(
+        { sub: userId, email, companyId },
+        { secret: 'RT_SECRET', expiresIn: '7d' },
+      ),
+    ]);
+
+    return { access_token: at, refresh_token: rt };
+  }
+
+  async updateRefreshToken(userId: string, rt: string) {
+    const hashedRt = await bcrypt.hash(rt, 10);
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 7);
+
+    await this.dataSource.getRepository(RefreshToken).save({
+      token: hashedRt,
+      expiresAt: expiryDate,
+      credential: { id: userId },
+    });
+  }
+
+  async refreshTokens(userId: string, refreshToken: string) {
+    const user = await this.dataSource.getRepository(Credential).findOne({
+      where: { id: userId },
+      relations: ['staff', 'staff.company'],
+    });
+
+    if (!user) throw new ForbiddenException('Access Denied');
+
+    // ၁။ Database ထဲမှ သိမ်းထားသော Token ကို ယူသည်
+    const rtRepo = this.dataSource.getRepository(RefreshToken);
+    const storedToken = await rtRepo.findOne({
+      where: { credential: { id: userId } },
+      order: { createdAt: 'DESC' }, // နောက်ဆုံးထုတ်ထားသော token ကိုယူရန်
+    });
+
+    // ၂။ Token ရှိမရှိ နှင့် သက်တမ်းကုန်မကုန် စစ်သည်
+    if (!storedToken || new Date() > storedToken.expiresAt) {
+      throw new UnauthorizedException(
+        'Refresh token expired. Please login again.',
+      );
+    }
+
+    // ၃။ အရေးကြီးဆုံးအချက်: ပို့လိုက်သော Token နှင့် DB ထဲက Hash တူမတူ bcrypt ဖြင့် စစ်ရမည်
+    const isMatch = await bcrypt.compare(refreshToken, storedToken.token);
+    if (!isMatch) {
+      throw new UnauthorizedException('Invalid Refresh Token');
+    }
+
+    // ၄။ Token အသစ်ပြန်ထုတ်ပေးခြင်း
+    const tokens = await this.getTokens(
+      user.id,
+      user.email,
+      user.staff.company.id,
+    );
+
+    // ၅။ DB ထဲတွင် token အသစ်ကို update လုပ်သည်
+    await this.updateRefreshToken(user.id, tokens.refresh_token);
+
+    return tokens;
+  }
+}
