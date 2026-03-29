@@ -9,10 +9,7 @@ import { OptimizeImageService } from '../../../common/service/optimize-image.ser
 import { ImgFileService } from '../../../common/service/imgfile.service';
 
 @Module({
-  imports: [
-    // ဒီအပိုင်း ပါဝင်ရပါမယ်
-    TypeOrmModule.forFeature([Driver]),
-  ],
+  imports: [TypeOrmModule.forFeature([Driver])],
   controllers: [DriverController],
   providers: [
     DriverService,
