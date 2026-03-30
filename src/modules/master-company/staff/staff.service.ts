@@ -197,6 +197,7 @@ export class StaffService {
       currentPage: page,
     };
   }
+  
   private async getOptimizedCount(
     queryBuilder: SelectQueryBuilder<Staff>,
     hasFilters: boolean,
