@@ -42,9 +42,11 @@ export class MasterCompanyStationsService{
         queryBuilder.
          leftJoinAndSelect('stations.branch','branch');
 
+        queryBuilder.addSelect(['branch.id','branch.branches_name']);
+
         if(branches_id){
              queryBuilder.andWhere('stations.branch = :branches_id',{branches_id});
-            // queryBuilder.andWhere('stations.branches_id = :branches_id', { branches_id });
+             //queryBuilder.andWhere('stations.branches_id = :branches_id', { branches_id });
         }
 
         if(search){
@@ -90,8 +92,8 @@ export class MasterCompanyStationsService{
             address:station.address,
             division:station.division,
             status:station.status,
-            branch_id:station.branch?.id || null,
-            branch_name:station.branch?.branches_name || null,
+            branches_id:station.branch?.id || null,
+            branches_name:station.branch?.branches_name || null,
             
        
         }));
@@ -140,7 +142,7 @@ export class MasterCompanyStationsService{
         }
         
     }
-
+// 
     async findOne(id:string):Promise<Stations>{
         const station=await this.stationsRespository.findOne({
             where:{id},
@@ -155,8 +157,10 @@ export class MasterCompanyStationsService{
                 address:true,
                 division:true,
                 status:true,
+                // branches_id:true,
                 branch:{
                     id:true,
+                    branches_name:true,
                 }
             }
         });

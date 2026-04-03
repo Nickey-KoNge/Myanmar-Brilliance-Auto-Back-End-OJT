@@ -1,4 +1,4 @@
-import { Expose } from 'class-transformer';
+import { Expose, Transform } from 'class-transformer';
 
 export class GetStationsSerialize {
   @Expose()
@@ -29,8 +29,14 @@ export class GetStationsSerialize {
   status: string;
 
   @Expose()
-  branch_id: string;
+  @Transform(({ obj }: { obj: { branch?: { id: string } } }) => {
+    return obj.branch?.id || null;
+  })
+  branches_id: string;
 
-  @Expose()
-  branch_name: string;
+    @Expose()
+  @Transform(({ obj }: { obj: { branch?: { branches_name: string } } }) => {
+    return obj.branch?.branches_name || null;
+  })
+  branches_name: string;
 }

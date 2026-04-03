@@ -21,10 +21,10 @@ export class FindStationsSerialize {
   status: string;
 
   @Expose()
-  branch_id: string;
+  branches_id: string;
 
   @Expose()
-  branch_name: string;
+  branches_name: string;
 
   @Expose()
   @Transform(
