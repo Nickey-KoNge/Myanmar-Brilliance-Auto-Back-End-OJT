@@ -147,7 +147,7 @@ export class MasterCompanyBranchesService {
         address: true,
         division: true,
         status: true,
-        company: { id: true },
+        company: { id: true, company_name: true },
       },
     });
 
